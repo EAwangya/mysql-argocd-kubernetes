@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  myappdb:
+    build:
+      context: ./database
+      dockerfile: Dockerfile
+    image: eawangya/myappdb:latest
+    container_name: myappdb
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: admin123
+      # MYSQL_DATABASE: myappdb
+    volumes:
+      - dbdata:/var/lib/mysql
+    ports:
+      - "3306:3306"
+
+  myapp:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    image: eawangya/myapp:latest
+    container_name: myapp
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      - myappdb
+    environment:
+      DB_HOST: myappdb
+      DB_USER: root
+      DB_PASSWORD: admin123
+      DB_NAME: myappdb
+
+  myappweb:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    image: eawangya/myappweb:latest
+    container_name: myappweb
+    restart: always
+    ports:
+      - "8080:80"
+    depends_on:
+      - myapp
+
+volumes:
+  dbdata: {}
+

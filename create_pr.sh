@@ -4,7 +4,6 @@ set -euo pipefail
 REPO="EAwangya/argocd-kubernetes"
 BRANCH="hotfix"
 BASE="main"
-GITHUB_TOKEN=GITHUB_TOKEN 
 
 echo "Checking if a pull request already exists from '$BRANCH' to '$BASE'..."
 

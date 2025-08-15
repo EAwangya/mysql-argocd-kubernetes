@@ -1,6 +1,6 @@
 require('dotenv').config();
 const express = require('express');
-const mysql = require('mysql2/promise'); // using promise-based API
+const mysql = require('mysql2/promise'); // Promise-based API
 const bodyParser = require('body-parser');
 const { DateTime } = require('luxon');
 const os = require('os');
@@ -8,6 +8,7 @@ const os = require('os');
 const app = express();
 const port = process.env.PORT || 3000;
 const hostname = os.hostname();
+const APP_VERSION = "v1.0.0";
 
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -22,14 +23,14 @@ const db = mysql.createPool({
   queueLimit: 0
 });
 
-// Utility to format time
+// Utility to format time in Denver
 const getDenverTime = (jsDate) => {
   return DateTime.fromJSDate(jsDate, { zone: 'utc' })
     .setZone('America/Denver')
     .toFormat('yyyy-LL-dd HH:mm:ss ZZZZ');
 };
 
-// Render HTML layout
+// Render HTML layout with version at top-right
 const renderLayout = (title, body) => `
 <!DOCTYPE html>
 <html lang="en">
@@ -39,7 +40,9 @@ const renderLayout = (title, body) => `
 <title>${title}</title>
 <style>
   body { font-family: Arial, sans-serif; background-color: #f5f5f5; color: #333; padding: 2rem; }
-  h1, h2, h3 { color: #2c3e50; }
+  h1, h2, h3 { color: #2c3e50; margin: 0; }
+  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+  .version { font-size: 1.2rem; font-weight: bold; color: #e74c3c; }
   table { border-collapse: collapse; width: 100%; margin-bottom: 1rem; }
   th, td { border: 1px solid #ccc; padding: 0.5rem; text-align: left; }
   th { background-color: #e0e0e0; }
@@ -49,6 +52,10 @@ const renderLayout = (title, body) => `
 </style>
 </head>
 <body>
+<div class="header">
+  <h1>${title}</h1>
+  <span class="version">Version: ${APP_VERSION}</span>
+</div>
 ${body}
 </body>
 </html>

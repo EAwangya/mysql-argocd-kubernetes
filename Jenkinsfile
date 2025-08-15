@@ -10,7 +10,6 @@ pipeline {
     DB_IMAGE = 'eawangya/myappweb'
     APP_IMAGE = 'eawangya/myapp'
     WEB_IMAGE = 'eawangya/myappweb'
-    GITHUB_TOKEN = GITHUB_TOKEN
 
   }
 

@@ -40,7 +40,7 @@ app.get('/', (req, res) => {
       const denverTime = nowUTC.setZone('America/Denver').toFormat('yyyy-LL-dd HH:mm:ss ZZZZ');
       const hostname = os.hostname();
 
-      let html = `<body style="background-color: lightblue; font-family: Arial, sans-serif;">`;
+      let html = `<body style="background-color: red; font-family: Arial, sans-serif;">`;
       html += `<h3>Users from database: <code>${process.env.DB_NAME || 'myappdb'}</code></h3>`;
       html += `<p>🖥️ This application is running in a Kubernetes pod: <code>${hostname}</code></p>`;
       html += `<p>✅ Fetched ${results.length} user(s) from the database at ${denverTime} (Denver time)</p>`;

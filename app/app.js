@@ -42,6 +42,7 @@ app.get('/', (req, res) => {
 
       let html = `<h3>Users from database: <code>${process.env.DB_NAME || 'myappdb'}</code></h3>`;
       html += `<p>🖥️ This application is running in a Kubernetes pod: <code>${hostname}</code></p>`;
+      html += `<p>V2.0.99</p>`;
       html += `<p>✅ Fetched ${results.length} user(s) from the database at ${denverTime} (Denver time)</p>`;
 
       html += `<ul>`;

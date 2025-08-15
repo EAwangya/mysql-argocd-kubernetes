@@ -1,148 +1,190 @@
+require('dotenv').config();
 const express = require('express');
-const mysql = require('mysql2');
+const mysql = require('mysql2/promise'); // using promise-based API
 const bodyParser = require('body-parser');
 const { DateTime } = require('luxon');
 const os = require('os');
-const hostname = os.hostname();
-
-require('dotenv').config();
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
+const hostname = os.hostname();
 
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// MySQL connection
-const db = mysql.createConnection({
+// MySQL connection pool
+const db = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME
+  database: process.env.DB_NAME,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
 });
 
-db.connect(err => {
-  if (err) {
-    console.error('Database connection error:', err);
-    process.exit(1);
-  }
-  console.log('✅ Connected to MySQL');
-});
+// Utility to format time
+const getDenverTime = (jsDate) => {
+  return DateTime.fromJSDate(jsDate, { zone: 'utc' })
+    .setZone('America/Denver')
+    .toFormat('yyyy-LL-dd HH:mm:ss ZZZZ');
+};
 
-// GET / — Show users list
-app.get('/', (req, res) => {
-  db.query('SELECT * FROM users', (err, results) => {
-    if (err) return res.status(500).send('❌ DB query error');
+// Render HTML layout
+const renderLayout = (title, body) => `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${title}</title>
+<style>
+  body { font-family: Arial, sans-serif; background-color: #f5f5f5; color: #333; padding: 2rem; }
+  h1, h2, h3 { color: #2c3e50; }
+  table { border-collapse: collapse; width: 100%; margin-bottom: 1rem; }
+  th, td { border: 1px solid #ccc; padding: 0.5rem; text-align: left; }
+  th { background-color: #e0e0e0; }
+  a { color: #3498db; text-decoration: none; margin-right: 0.5rem; }
+  button { padding: 0.3rem 0.6rem; cursor: pointer; }
+  form { display: inline; }
+</style>
+</head>
+<body>
+${body}
+</body>
+</html>
+`;
 
-    db.query('SELECT NOW() as now', (err2, timeResult) => {
-      if (err2) return res.status(500).send('❌ Time query error');
+// Home - List users
+app.get('/', async (req, res) => {
+  try {
+    const [users] = await db.query('SELECT * FROM users');
+    const [[{ now }]] = await db.query('SELECT NOW() as now');
+    const denverTime = getDenverTime(now);
 
-      const nowUTC = DateTime.fromJSDate(timeResult[0].now, { zone: 'utc' });
-      const denverTime = nowUTC.setZone('America/Denver').toFormat('yyyy-LL-dd HH:mm:ss ZZZZ');
-      const hostname = os.hostname();
+    let html = `<h2>Users from database: <code>${process.env.DB_NAME}</code></h2>`;
+    html += `<p>🖥️ Running on host: <code>${hostname}</code></p>`;
+    html += `<p>✅ Fetched ${users.length} user(s) at ${denverTime} (Denver time)</p>`;
 
-      let html = `<body style="background-color: red; font-family: Arial, sans-serif;">`;
-      html += `<h3>Users from database: <code>${process.env.DB_NAME || 'myappdb'}</code></h3>`;
-      html += `<p>🖥️ This application is running in a Kubernetes pod: <code>${hostname}</code></p>`;
-      html += `<p>✅ Fetched ${results.length} user(s) from the database at ${denverTime} (Denver time)</p>`;
-
-      html += `<ul>`;
-      results.forEach(user => {
-        html += `<li>
-          ${user.name} (${user.email})
-          <a href="/edit/${user.id}">Edit</a> |
-          <form action="/delete/${user.id}" method="POST" style="display:inline;">
-            <button type="submit">Delete</button>
-          </form>
-        </li>`;
+    if (users.length) {
+      html += `<table>
+        <thead>
+          <tr><th>Name</th><th>Email</th><th>Actions</th></tr>
+        </thead>
+        <tbody>`;
+      users.forEach(user => {
+        html += `<tr>
+          <td>${user.name}</td>
+          <td>${user.email}</td>
+          <td>
+            <a href="/edit/${user.id}">Edit</a>
+            <form action="/delete/${user.id}" method="POST" onsubmit="return confirm('Are you sure?');">
+              <button type="submit">Delete</button>
+            </form>
+          </td>
+        </tr>`;
       });
-      html += `</ul>`;
-      html += `<a href="/add">Add New User</a> | <a href="/databases">View Databases</a>`;
-      html += `</body>`;  // ✅ moved before res.send()
+      html += `</tbody></table>`;
+    } else {
+      html += `<p>No users found.</p>`;
+    }
 
-      res.send(html);
-    });
-  });
+    html += `<a href="/add">➕ Add New User</a> | <a href="/databases">📂 View Databases</a>`;
+
+    res.send(renderLayout('Users', html));
+  } catch (err) {
+    console.error('Error fetching users:', err);
+    res.status(500).send(renderLayout('Error', '<p>❌ Internal Server Error</p>'));
+  }
 });
 
-
-
-// GET /add — Show add user form
+// Add user form
 app.get('/add', (req, res) => {
-  const form = `
-    <h1>Add User</h1>
+  const html = `
+    <h2>Add User</h2>
     <form action="/add" method="POST">
       <label>Name:</label><br>
       <input type="text" name="name" required><br>
       <label>Email:</label><br>
       <input type="email" name="email" required><br><br>
-      <button type="submit">➕ Add</button>
+      <button type="submit">➕ Add User</button>
     </form>
-    <br><a href="/">⬅️ Back</a>
+    <br><a href="/">⬅️ Back to Home</a>
   `;
-  res.send(form);
+  res.send(renderLayout('Add User', html));
 });
 
-// POST /add — Handle user creation
-app.post('/add', (req, res) => {
+// Add user handler
+app.post('/add', async (req, res) => {
   const { name, email } = req.body;
-  db.query('INSERT INTO users (name, email) VALUES (?, ?)', [name, email], err => {
-    if (err) return res.status(500).send('❌ Error inserting user');
+  try {
+    await db.query('INSERT INTO users (name, email) VALUES (?, ?)', [name, email]);
     res.redirect('/');
-  });
+  } catch (err) {
+    console.error('Error adding user:', err);
+    res.status(500).send(renderLayout('Error', '<p>❌ Error inserting user</p>'));
+  }
 });
 
-// GET /edit/:id — Show edit form
-app.get('/edit/:id', (req, res) => {
-  const { id } = req.params;
-  db.query('SELECT * FROM users WHERE id = ?', [id], (err, results) => {
-    if (err || results.length === 0) return res.status(404).send('❌ User not found');
+// Edit user form
+app.get('/edit/:id', async (req, res) => {
+  try {
+    const [results] = await db.query('SELECT * FROM users WHERE id = ?', [req.params.id]);
+    if (!results.length) return res.status(404).send(renderLayout('Error', '<p>❌ User not found</p>'));
+
     const user = results[0];
-    const form = `
-      <h1>Edit User</h1>
+    const html = `
+      <h2>Edit User</h2>
       <form action="/edit/${user.id}" method="POST">
         <label>Name:</label><br>
         <input type="text" name="name" value="${user.name}" required><br>
         <label>Email:</label><br>
         <input type="email" name="email" value="${user.email}" required><br><br>
-        <button type="submit">💾 Save</button>
+        <button type="submit">💾 Save Changes</button>
       </form>
-      <br><a href="/">⬅️ Back</a>
+      <br><a href="/">⬅️ Back to Home</a>
     `;
-    res.send(form);
-  });
+    res.send(renderLayout('Edit User', html));
+  } catch (err) {
+    console.error('Error fetching user:', err);
+    res.status(500).send(renderLayout('Error', '<p>❌ Internal Server Error</p>'));
+  }
 });
 
-// POST /edit/:id — Handle user update
-app.post('/edit/:id', (req, res) => {
-  const { id } = req.params;
+// Update user
+app.post('/edit/:id', async (req, res) => {
   const { name, email } = req.body;
-  db.query('UPDATE users SET name = ?, email = ? WHERE id = ?', [name, email, id], err => {
-    if (err) return res.status(500).send('❌ Error updating user');
+  try {
+    await db.query('UPDATE users SET name = ?, email = ? WHERE id = ?', [name, email, req.params.id]);
     res.redirect('/');
-  });
+  } catch (err) {
+    console.error('Error updating user:', err);
+    res.status(500).send(renderLayout('Error', '<p>❌ Error updating user</p>'));
+  }
 });
 
-// POST /delete/:id — Handle user deletion
-app.post('/delete/:id', (req, res) => {
-  const { id } = req.params;
-  db.query('DELETE FROM users WHERE id = ?', [id], err => {
-    if (err) return res.status(500).send('❌ Error deleting user');
+// Delete user
+app.post('/delete/:id', async (req, res) => {
+  try {
+    await db.query('DELETE FROM users WHERE id = ?', [req.params.id]);
     res.redirect('/');
-  });
+  } catch (err) {
+    console.error('Error deleting user:', err);
+    res.status(500).send(renderLayout('Error', '<p>❌ Error deleting user</p>'));
+  }
 });
 
-// GET /databases — List all databases
-app.get('/databases', (req, res) => {
-  db.query('SHOW DATABASES', (err, results) => {
-    if (err) return res.status(500).send('❌ Could not fetch databases');
-
+// List databases
+app.get('/databases', async (req, res) => {
+  try {
+    const [databases] = await db.query('SHOW DATABASES');
     let html = `<h2>📂 Available MySQL Databases</h2><ul>`;
-    results.forEach(row => {
-      html += `<li>${row.Database}</li>`;
-    });
+    databases.forEach(db => html += `<li>${db.Database}</li>`);
     html += `</ul><br><a href="/">⬅️ Back to Home</a>`;
-    res.send(html);
-  });
+    res.send(renderLayout('Databases', html));
+  } catch (err) {
+    console.error('Error fetching databases:', err);
+    res.status(500).send(renderLayout('Error', '<p>❌ Could not fetch databases</p>'));
+  }
 });
 
 // Start server

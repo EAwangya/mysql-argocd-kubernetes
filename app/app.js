@@ -40,9 +40,9 @@ app.get('/', (req, res) => {
       const denverTime = nowUTC.setZone('America/Denver').toFormat('yyyy-LL-dd HH:mm:ss ZZZZ');
       const hostname = os.hostname();
 
-      let html = `<h3>Users from database: <code>${process.env.DB_NAME || 'myappdb'}</code></h3>`;
+      let html = `<body style="background-color: lightblue; font-family: Arial, sans-serif;">`;
+      html += `<h3>Users from database: <code>${process.env.DB_NAME || 'myappdb'}</code></h3>`;
       html += `<p>🖥️ This application is running in a Kubernetes pod: <code>${hostname}</code></p>`;
-      html += `<p>V2.0.99</p>`;
       html += `<p>✅ Fetched ${results.length} user(s) from the database at ${denverTime} (Denver time)</p>`;
 
       html += `<ul>`;
@@ -55,11 +55,15 @@ app.get('/', (req, res) => {
           </form>
         </li>`;
       });
-      html += `</ul><a href="/add">Add New User</a> | <a href="/databases">View Databases</a>`;
+      html += `</ul>`;
+      html += `<a href="/add">Add New User</a> | <a href="/databases">View Databases</a>`;
+      html += `</body>`;  // ✅ moved before res.send()
+
       res.send(html);
     });
   });
 });
+
 
 
 // GET /add — Show add user form

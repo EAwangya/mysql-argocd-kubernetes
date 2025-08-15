@@ -17,11 +17,11 @@ pipeline {
   }
 
   stages {
-    stage('Connect to GitHub') {
-      steps {
-        git branch: 'main', credentialsId: 'github-cred', url: 'https://github.com/EAwangya/mysql-argocd-kubernetes.git'
-      }
-    }
+    // stage('Connect to GitHub') {
+    //   steps {
+    //     git branch: 'main', credentialsId: 'github-cred', url: 'https://github.com/EAwangya/mysql-argocd-kubernetes.git'
+    //   }
+    // }
         stage('Check Existing Pull Request') {
             steps {
                 script {

@@ -50,26 +50,26 @@ pipeline {
                 }
             }
         }
-    // stage('Build Docker Images') {
-    //     steps {
-    //         script {
-    //             sh '''
-    //             docker build -t "${DB_IMAGE}:${TAG}"  -f database/Dockerfile ./database
-    //             docker build -t "${APP_IMAGE}:${TAG}" -f app/Dockerfile ./app
-    //             docker build -t "${WEB_IMAGE}:${TAG}" -f web/Dockerfile ./web
-    //             '''
-    //         }
-    //     }
-    // }  
-    // stage('Docker Push') {
-    //   steps {
-    //     withDockerRegistry(credentialsId: 'dockerhub-creds', url: '') {
-    //         sh "docker push ${DB_IMAGE}:${TAG}"
-    //         sh "docker push ${APP_IMAGE}:${TAG}"
-    //         sh "docker push ${WEB_IMAGE}:${TAG}"
-    //     }
-    //   }
-    // }
+    stage('Build Docker Images') {
+        steps {
+            script {
+                sh '''
+                docker build -t "${DB_IMAGE}:${TAG}"  -f database/Dockerfile ./database
+                docker build -t "${APP_IMAGE}:${TAG}" -f app/Dockerfile ./app
+                docker build -t "${WEB_IMAGE}:${TAG}" -f web/Dockerfile ./web
+                '''
+            }
+        }
+    }  
+    stage('Docker Push') {
+      steps {
+        withDockerRegistry(credentialsId: 'dockerhub-creds', url: '') {
+            sh "docker push ${DB_IMAGE}:${TAG}"
+            sh "docker push ${APP_IMAGE}:${TAG}"
+            sh "docker push ${WEB_IMAGE}:${TAG}"
+        }
+      }
+    }
     stage('Clone or Pull GitHub Manifest Repo') {
         steps {
             script {

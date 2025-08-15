@@ -10,8 +10,9 @@ pipeline {
     DB_IMAGE = 'eawangya/myappweb'
     APP_IMAGE = 'eawangya/myapp'
     WEB_IMAGE = 'eawangya/myappweb'
-    GITHUB_TOKEN = "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"
-
+    REPO = "EAwangya/argocd-kubernetes"
+    BRANCH = "hotfix"
+    BASE = "main"
 
   }
 
@@ -21,6 +22,34 @@ pipeline {
         git branch: 'main', credentialsId: 'github-cred', url: 'https://github.com/EAwangya/mysql-argocd-kubernetes.git'
       }
     }
+        stage('Check Existing Pull Request') {
+            steps {
+                script {
+                    // Inject secret text into a variable
+                    withCredentials([string(credentialsId: 'github-token', variable: 'TOKEN')]) {
+                        
+                        def prExists = sh(
+                            script: """
+                                PR_LIST=\$(curl -s \
+                                    -H "Accept: application/vnd.github+json" \
+                                    -H "Authorization: Bearer \$TOKEN" \
+                                    -H "X-GitHub-Api-Version: 2022-11-28" \
+                                    "https://api.github.com/repos/${REPO}/pulls?state=open&head=${BRANCH}&base=${BASE}")
+
+                                echo \$(echo "\$PR_LIST" | jq 'length')
+                            """,
+                            returnStdout: true
+                        ).trim()
+
+                        if (prExists != "0") {
+                            error "⚠️ Pull request already exists for branch '${BRANCH}' → exiting pipeline."
+                        } else {
+                            echo "✅ No existing PR found — continuing pipeline..."
+                        }
+                    }
+                }
+            }
+        }
     // stage('Build Docker Images') {
     //     steps {
     //         script {
@@ -86,27 +115,20 @@ pipeline {
     }
     stage('Create Pull Request') {
         steps {
-            withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) {
-                sh 'chmod +x create_pr.sh'
-                sh './create_pr.sh'
+            withCredentials([string(credentialsId: 'github-token', variable: 'TOKEN')]) {
+                sh """
+                    curl -L \
+                    -X POST \
+                    -H "Accept: application/vnd.github+json" \
+                    -H "Authorization: Bearer ${TOKEN}" \
+                    -H "X-GitHub-Api-Version: 2022-11-28" \
+                    https://api.github.com/repos/EAwangya/argocd-kubernetes/pulls \
+                    -d '{"title":"Amazing new feature - Application updated to v${TAG}","body":"Please pull these awesome changes in!","head":"hotfix","base":"main"}'
+                 """
+
             }
         }
     }
-    // stage('Create Pull Request') {
-    //     steps {
-    //         script {
-    //             sh """
-    //                 curl -L \
-    //                 -X POST \
-    //                 -H "Accept: application/vnd.github+json" \
-    //                 -H "Authorization: Bearer <TOKEN>" \
-    //                 -H "X-GitHub-Api-Version: 2022-11-28" \
-    //                 https://api.github.com/repos/EAwangya/argocd-kubernetes/pulls \
-    //                 -d '{"title":"Amazing new feature - Application updated to v${TAG}","body":"Please pull these awesome changes in!","head":"hotfix","base":"main"}'
-    //              """
-    //         }
-    //     }
-    // }
 }
   post {
     always {
@@ -133,11 +155,6 @@ docker builder prune -af || true
           [pattern: 'k8s/**',       type: 'EXCLUDE']
         ]
       )
-
-      // NOTE: Do NOT call deleteDir() here, since that would wipe the excluded dirs too.
     }
   }
 }
-
-
-

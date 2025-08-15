@@ -98,7 +98,7 @@ pipeline {
     //                 curl -L \
     //                 -X POST \
     //                 -H "Accept: application/vnd.github+json" \
-    //                 -H "Authorization: Bearer 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" \
+    //                 -H "Authorization: Bearer <TOKEN>" \
     //                 -H "X-GitHub-Api-Version: 2022-11-28" \
     //                 https://api.github.com/repos/EAwangya/argocd-kubernetes/pulls \
     //                 -d '{"title":"Amazing new feature - Application updated to v${TAG}","body":"Please pull these awesome changes in!","head":"hotfix","base":"main"}'

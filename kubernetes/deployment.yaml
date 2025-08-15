@@ -16,7 +16,7 @@ spec:
   capacity:
     storage: 5Gi
   accessModes: ["ReadWriteOnce"]
-  persistentVolumeReclaimPolicy: Retain
+  persistentVolumeReclaimPolicy: Delete
   hostPath:
     path: /mnt/data/myappdb
 ---
@@ -30,7 +30,6 @@ spec:
     requests:
       storage: 5Gi
   volumeName: myappdb-pv
-
 
 ---
 apiVersion: apps/v1
@@ -180,7 +179,7 @@ spec:
     - protocol: TCP
       port: 3000
       targetPort: myapp-port
-  type: ClusterIP
+  type: NodePort
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress

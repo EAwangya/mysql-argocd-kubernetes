@@ -54,21 +54,26 @@ pipeline {
         steps {
             script {
                 sh '''
-                docker build -t "${DB_IMAGE}:${TAG}"  -f database/Dockerfile ./database
-                docker build -t "${APP_IMAGE}:${TAG}" -f app/Dockerfile ./app
-                docker build -t "${WEB_IMAGE}:${TAG}" -f web/Dockerfile ./web
+                # Ensure buildx builder exists
+                docker buildx create --use || true
+    
+                # Build multi-arch images for local usage
+                docker buildx build --platform linux/amd64,linux/arm64 -t "${DB_IMAGE}:${TAG}" -f database/Dockerfile ./database --load
+                docker buildx build --platform linux/amd64,linux/arm64 -t "${APP_IMAGE}:${TAG}" -f app/Dockerfile ./app --load
+                docker buildx build --platform linux/amd64,linux/arm64 -t "${WEB_IMAGE}:${TAG}" -f web/Dockerfile ./web --load
                 '''
             }
         }
-    }  
+    }
+    
     stage('Docker Push') {
-      steps {
-        withDockerRegistry(credentialsId: 'dockerhub-creds', url: '') {
-            sh "docker push ${DB_IMAGE}:${TAG}"
-            sh "docker push ${APP_IMAGE}:${TAG}"
-            sh "docker push ${WEB_IMAGE}:${TAG}"
+        steps {
+            withDockerRegistry(credentialsId: 'dockerhub-creds', url: '') {
+                sh "docker push ${DB_IMAGE}:${TAG}"
+                sh "docker push ${APP_IMAGE}:${TAG}"
+                sh "docker push ${WEB_IMAGE}:${TAG}"
+            }
         }
-      }
     }
     stage('Clone or Pull GitHub Manifest Repo') {
         steps {

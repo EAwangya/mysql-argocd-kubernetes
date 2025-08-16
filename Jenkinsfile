@@ -15,7 +15,7 @@ pipeline {
     }
 
     options {
-        timestamps()  // keep timestamped logs
+        timestamps()
     }
 
     stages {
@@ -47,18 +47,17 @@ pipeline {
 
         stage('Build & Push Docker Images') {
             steps {
-                wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName':'xterm']) {
-                    withDockerRegistry(credentialsId: 'dockerhub-creds', url: '') {
-                        sh '''
-                            # Ensure buildx exists
-                            docker buildx create --use || true
+                withDockerRegistry(credentialsId: 'dockerhub-creds', url: '') {
+                    sh '''
+                        # Ensure buildx exists
+                        docker buildx create --name multiarch_builder --use || true
+                        docker run --rm --privileged tonistiigi/binfmt --install all || true
 
-                            # Build and push multi-arch images with verbose output
-                            docker buildx build --platform linux/amd64,linux/arm64 -t ${DB_IMAGE}:${TAG} -f database/Dockerfile ./database --push --progress=plain
-                            docker buildx build --platform linux/amd64,linux/arm64 -t ${APP_IMAGE}:${TAG} -f app/Dockerfile ./app --push --progress=plain
-                            docker buildx build --platform linux/amd64,linux/arm64 -t ${WEB_IMAGE}:${TAG} -f web/Dockerfile ./web --push --progress=plain
-                        '''
-                    }
+                        # Build and push multi-arch images
+                        docker buildx build --platform linux/amd64,linux/arm64 -t ${DB_IMAGE}:${TAG} -f database/Dockerfile ./database --push --progress=plain
+                        docker buildx build --platform linux/amd64,linux/arm64 -t ${APP_IMAGE}:${TAG} -f app/Dockerfile ./app --push --progress=plain
+                        docker buildx build --platform linux/amd64,linux/arm64 -t ${WEB_IMAGE}:${TAG} -f web/Dockerfile ./web --push --progress=plain
+                    '''
                 }
             }
         }
@@ -83,7 +82,10 @@ pipeline {
             steps {
                 script {
                     dir(MANIFEST_DIR) {
-                        sh 'sed -i "s#image: eawangya/.*#image: ${APP_IMAGE}:${TAG}#g" ${MANIFEST_FILE}'
+                        // Use yq to safely update the image
+                        sh """
+                            yq eval -i '.spec.template.spec.containers[] |= (select(.name=="app") .image = "${APP_IMAGE}:${TAG}")' ${MANIFEST_FILE}
+                        """
                     }
                 }
             }
@@ -139,11 +141,7 @@ pipeline {
                 [pattern: 'k8s/**', type: 'EXCLUDE']
             ])
         }
-        success {
-            echo "✅ Pipeline completed successfully!"
-        }
-        failure {
-            echo "❌ Pipeline failed. Check logs for details."
-        }
+        success { echo "✅ Pipeline completed successfully!" }
+        failure { echo "❌ Pipeline failed. Check logs for details." }
     }
 }

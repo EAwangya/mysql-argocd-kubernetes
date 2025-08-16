@@ -52,7 +52,7 @@ pipeline {
         }
     stage('Build Docker Images') {
         steps {
-            script {
+            withDockerRegistry(credentialsId: 'dockerhub-creds', url: '') {
                 sh '''
                 # Ensure buildx builder exists and is used
                 docker buildx create --use || true
@@ -61,7 +61,7 @@ pipeline {
                 docker buildx build --platform linux/amd64,linux/arm64 -t ${DB_IMAGE}:${TAG} -f database/Dockerfile ./database --push
                 docker buildx build --platform linux/amd64,linux/arm64 -t ${APP_IMAGE}:${TAG} -f app/Dockerfile ./app --push
                 docker buildx build --platform linux/amd64,linux/arm64 -t ${WEB_IMAGE}:${TAG} -f web/Dockerfile ./web --push
-                '''
+                '''       
             }
         }
     }

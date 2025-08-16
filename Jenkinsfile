@@ -7,7 +7,7 @@ pipeline {
     MANIFEST_DIR = "manifests"
     MANIFEST_FILE = "${MANIFEST_DIR}/deployment.yaml"
     TAG = "${env.BUILD_NUMBER}"
-    DB_IMAGE = 'eawangya/myappweb'
+    DB_IMAGE = 'eawangya/myappdb'
     APP_IMAGE = 'eawangya/myapp'
     WEB_IMAGE = 'eawangya/myappweb'
     REPO = "EAwangya/argocd-kubernetes"

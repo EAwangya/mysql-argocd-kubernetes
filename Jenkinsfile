@@ -15,8 +15,7 @@ pipeline {
     }
 
     options {
-        ansiColor('xterm')
-        timestamps()
+        timestamps()  // keep timestamped logs
     }
 
     stages {
@@ -48,16 +47,18 @@ pipeline {
 
         stage('Build & Push Docker Images') {
             steps {
-                withDockerRegistry(credentialsId: 'dockerhub-creds', url: '') {
-                    sh '''
-                        # Ensure buildx exists
-                        docker buildx create --use || true
+                wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName':'xterm']) {
+                    withDockerRegistry(credentialsId: 'dockerhub-creds', url: '') {
+                        sh '''
+                            # Ensure buildx exists
+                            docker buildx create --use || true
 
-                        # Build and push multi-arch images with verbose output
-                        docker buildx build --platform linux/amd64,linux/arm64 -t ${DB_IMAGE}:${TAG} -f database/Dockerfile ./database --push --progress=plain
-                        docker buildx build --platform linux/amd64,linux/arm64 -t ${APP_IMAGE}:${TAG} -f app/Dockerfile ./app --push --progress=plain
-                        docker buildx build --platform linux/amd64,linux/arm64 -t ${WEB_IMAGE}:${TAG} -f web/Dockerfile ./web --push --progress=plain
-                    '''
+                            # Build and push multi-arch images with verbose output
+                            docker buildx build --platform linux/amd64,linux/arm64 -t ${DB_IMAGE}:${TAG} -f database/Dockerfile ./database --push --progress=plain
+                            docker buildx build --platform linux/amd64,linux/arm64 -t ${APP_IMAGE}:${TAG} -f app/Dockerfile ./app --push --progress=plain
+                            docker buildx build --platform linux/amd64,linux/arm64 -t ${WEB_IMAGE}:${TAG} -f web/Dockerfile ./web --push --progress=plain
+                        '''
+                    }
                 }
             }
         }

@@ -54,27 +54,27 @@ pipeline {
         steps {
             script {
                 sh '''
-                # Ensure buildx builder exists
+                # Ensure buildx builder exists and is used
                 docker buildx create --use || true
     
-                # Build multi-arch images for local usage
-                docker buildx build --platform linux/amd64,linux/arm64 -t "${DB_IMAGE}:${TAG}" -f database/Dockerfile ./database --load
-                docker buildx build --platform linux/amd64,linux/arm64 -t "${APP_IMAGE}:${TAG}" -f app/Dockerfile ./app --load
-                docker buildx build --platform linux/amd64,linux/arm64 -t "${WEB_IMAGE}:${TAG}" -f web/Dockerfile ./web --load
+                # Build multi-arch images and push directly to registry
+                docker buildx build --platform linux/amd64,linux/arm64 -t ${DB_IMAGE}:${TAG} -f database/Dockerfile ./database --push
+                docker buildx build --platform linux/amd64,linux/arm64 -t ${APP_IMAGE}:${TAG} -f app/Dockerfile ./app --push
+                docker buildx build --platform linux/amd64,linux/arm64 -t ${WEB_IMAGE}:${TAG} -f web/Dockerfile ./web --push
                 '''
             }
         }
     }
     
-    stage('Docker Push') {
-        steps {
-            withDockerRegistry(credentialsId: 'dockerhub-creds', url: '') {
-                sh "docker push ${DB_IMAGE}:${TAG}"
-                sh "docker push ${APP_IMAGE}:${TAG}"
-                sh "docker push ${WEB_IMAGE}:${TAG}"
-            }
-        }
-    }
+    // stage('Docker Push') {
+    //     steps {
+    //         withDockerRegistry(credentialsId: 'dockerhub-creds', url: '') {
+    //             sh "docker push ${DB_IMAGE}:${TAG}"
+    //             sh "docker push ${APP_IMAGE}:${TAG}"
+    //             sh "docker push ${WEB_IMAGE}:${TAG}"
+    //         }
+    //     }
+    // }
     stage('Clone or Pull GitHub Manifest Repo') {
         steps {
             script {

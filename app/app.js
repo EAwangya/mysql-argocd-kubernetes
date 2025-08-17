@@ -39,7 +39,7 @@ const renderLayout = (title, body) => `
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${title}</title>
 <style>
-  body { font-family: Arial, sans-serif; background-color: #f6f6f6; color: #333; padding: 2rem; }
+  body { font-family: Arial, sans-serif; background-color: yellow; color: #333; padding: 2rem; }
   h1, h2, h3 { color: #2c3e50; margin: 0; }
   .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
   .version { font-size: 1.2rem; font-weight: bold; color: #e74c3c; }

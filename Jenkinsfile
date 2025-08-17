@@ -86,7 +86,7 @@ pipeline {
                         // sh """
                         //     yq eval -i '.spec.template.spec.containers[] |= (select(.name=="app") .image = "${APP_IMAGE}:${TAG}")' ${MANIFEST_FILE}
                         // """
-                        sh "sh 'sed -i "s#eawangya.*#${APP_IMAGE}:${TAG}#g" ${MANIFEST_FILE}'"
+                        sh 'sed -i "s#eawangya.*#${APP_IMAGE}:${TAG}#g" ${MANIFEST_FILE}'
                     }
                 }
             }

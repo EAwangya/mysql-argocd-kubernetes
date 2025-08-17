@@ -8,7 +8,7 @@ const os = require('os');
 const app = express();
 const port = process.env.PORT || 3000;
 const hostname = os.hostname();
-const APP_VERSION = "v2.0.0";
+const APP_VERSION = "v3.0.0";
 
 app.use(bodyParser.urlencoded({ extended: true }));
 

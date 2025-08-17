@@ -114,21 +114,21 @@ pipeline {
             }
         }
 
-        stage('Create Pull Request') {
-            steps {
-                withCredentials([string(credentialsId: 'github-token', variable: 'TOKEN')]) {
-                    sh """
-                        curl -L -X POST \
-                        -H "Accept: application/vnd.github+json" \
-                        -H "Authorization: Bearer ${TOKEN}" \
-                        -H "X-GitHub-Api-Version: 2022-11-28" \
-                        https://api.github.com/repos/${REPO}/pulls \
-                        -d '{"title":"Update App to v${TAG}","body":"Automated update from Jenkins","head":"${BRANCH}","base":"${BASE}"}' || true
-                    """
-                }
-            }
-        }
-    }
+    //     stage('Create Pull Request') {
+    //         steps {
+    //             withCredentials([string(credentialsId: 'github-token', variable: 'TOKEN')]) {
+    //                 sh """
+    //                     curl -L -X POST \
+    //                     -H "Accept: application/vnd.github+json" \
+    //                     -H "Authorization: Bearer ${TOKEN}" \
+    //                     -H "X-GitHub-Api-Version: 2022-11-28" \
+    //                     https://api.github.com/repos/${REPO}/pulls \
+    //                     -d '{"title":"Update App to v${TAG}","body":"Automated update from Jenkins","head":"${BRANCH}","base":"${BASE}"}' || true
+    //                 """
+    //             }
+    //         }
+    //     }
+    // }
 
     post {
         always {

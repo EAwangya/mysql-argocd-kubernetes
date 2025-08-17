@@ -8,7 +8,7 @@ const os = require('os');
 const app = express();
 const port = process.env.PORT || 3000;
 const hostname = os.hostname();
-const APP_VERSION = "v4.0.1";
+const APP_VERSION = "v1.0.0";
 
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -39,7 +39,7 @@ const renderLayout = (title, body) => `
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${title}</title>
 <style>
-  body { font-family: Arial, sans-serif; background-color: yellow; color: #333; padding: 2rem; }
+  body { font-family: Arial, sans-serif; background-color: #f5f5f5; color: #333; padding: 2rem; }
   h1, h2, h3 { color: #2c3e50; margin: 0; }
   .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
   .version { font-size: 1.2rem; font-weight: bold; color: #e74c3c; }

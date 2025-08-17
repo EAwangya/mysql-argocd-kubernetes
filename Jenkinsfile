@@ -70,7 +70,8 @@ pipeline {
                             sh "git clone -b ${BRANCH} https://${MANIFEST_REPO} ${MANIFEST_DIR}"
                         } else {
                             dir(MANIFEST_DIR) {
-                                sh "git fetch --all && git reset --hard origin/${BRANCH}"
+                                sh "git pull"
+                                // sh "git fetch --all && git reset --hard origin/${BRANCH}"
                             }
                         }
                     }
